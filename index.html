@@ -47,16 +47,30 @@
             margin-top: 20px;
             font-weight: bold;
         }
+
+        /* Стиль для отображения сектора и призов */
+        #prizeSector {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            margin-left: -5px;
+            font-weight: bold;
+            font-size: 16px;
+            color: white;
+        }
     </style>
 </head>
 <body>
     <div id="wheel">
         <div id="arrow"></div>
+        <div id="prizeSector">Приз 1</div>
     </div>
     <button id="spinButton">Крутить колесо</button>
     <div id="result"></div>
 
     <script>
+        const apiUrl = "http://127.0.0.1:8000";  // Локальный сервер
+
         const prizes = [
             { name: 'Приз 1', amount: 10 },
             { name: 'Приз 2', amount: 20 },
@@ -68,7 +82,8 @@
         let resultDiv = document.getElementById('result');
         let wheel = document.getElementById('wheel');
         let arrow = document.getElementById('arrow');
-        
+        let prizeSector = document.getElementById('prizeSector');
+
         const anglePerSector = 360 / prizes.length; // угол для каждого сектора
 
         spinButton.onclick = function() {
@@ -86,8 +101,21 @@
                 let prize = prizes[prizeIndex];
                 resultDiv.textContent = `Вы выиграли: ${prize.name} (${prize.amount} звёзд)`;
 
+                // Отображаем название выигрыша в секторе
+                prizeSector.textContent = prize.name;
+
                 // Отправляем результат вращения в бота через WebApp API
-                window.Telegram.WebApp.sendData(`spin_result:${prize.amount}`);
+                fetch(`${apiUrl}/update_balance`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        result: prize.amount
+                    })
+                }).then(response => response.json())
+                  .then(data => console.log(data))
+                  .catch(error => console.error('Ошибка при отправке данных:', error));
             }, 3000);
         };
     </script>
