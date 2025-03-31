@@ -107,45 +107,38 @@
     <script>
         let stars = 0;
         let energy = 100;
-        const bot = window.Telegram.WebApp;
-        const userId = bot.initDataUnsafe?.user?.id;
-        const backendUrl = "http://178.255.126.148:5000";  // Если хостишь API, замени на свой сервер
-
+        let userId = 5837502694; // Подставь ID пользователя
+    
         async function fetchUserData() {
-            if (!userId) return;
-            const response = await fetch(`${backendUrl}/get_user/${userId}`);
-            const data = await response.json();
+            let response = await fetch(`http://178.255.126.148:5000/get_user/${userId}`);
+            let data = await response.json();
             stars = data.stars;
             energy = data.energy;
-            document.getElementById('stars').innerText = stars.toFixed(2);
-            document.getElementById('energy').innerText = energy + "%";
+            document.getElementById("stars").innerText = stars.toFixed(2);
+            document.getElementById("energy").innerText = energy + "%";
         }
-
-        document.getElementById('star').addEventListener('click', async function () {
+    
+        async function updateUserData() {
+            await fetch("http://178.255.126.148:5000/update_user", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ user_id: userId, stars: stars, energy: energy })
+            });
+        }
+    
+        document.getElementById("star").addEventListener("click", function () {
             if (energy > 0) {
                 stars += 0.01;
                 energy -= 1;
-                document.getElementById('stars').innerText = stars.toFixed(2);
-                document.getElementById('energy').innerText = energy + "%";
-                
-                // Отправляем обновленные данные в API
-                await fetch(`${backendUrl}/update_user`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ user_id: userId, stars, energy })
-                });
+                document.getElementById("stars").innerText = stars.toFixed(2);
+                document.getElementById("energy").innerText = energy + "%";
+                updateUserData();
             }
         });
-
-        setInterval(() => {
-            if (energy < 100) {
-                energy += 1;
-                document.getElementById('energy').innerText = energy + "%";
-            }
-        }, 1000);
-
-        fetchUserData();
+    
+        fetchUserData(); // Загружаем баланс при открытии страницы
     </script>
+
 
 </body>
 </html>
