@@ -3,153 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Колесо Удачи</title>
+    <title>Кликер Звезд</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        /* Стиль для колеса */
-        #wheel {
-            border-radius: 50%;
-            width: 300px;
-            height: 300px;
-            background: conic-gradient(#ff0000 0% 25%, #00ff00 25% 50%, #0000ff 50% 75%, #ff00ff 75% 100%);
-            margin: 50px auto;
-            position: relative;
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to bottom, #5bb5ff, #a1d8ff);
         }
-
-        /* Стиль для стрелки */
-        #arrow {
-            position: absolute;
-            top: -20px; /* Позиция стрелки над колесом */
-            left: 50%;
-            margin-left: -5px;
-            width: 0;
-            height: 0;
-            border-left: 5px solid transparent;
-            border-right: 5px solid transparent;
-            border-bottom: 10px solid black;
+        .balance {
+            font-size: 2rem;
+            margin-top: 20px;
         }
-
-        /* Стиль для кнопки */
-        #spinButton {
-            display: block;
-            margin: 20px auto;
-            padding: 10px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
+        .star {
+            width: 150px;
             cursor: pointer;
         }
-
-        /* Стиль для результата */
-        #result {
-            text-align: center;
-            font-size: 18px;
-            margin-top: 20px;
-            font-weight: bold;
+        .energy {
+            font-size: 1rem;
+            margin-top: 10px;
         }
-
-        /* Стиль для текста на секторах */
-        .sector-text {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-weight: bold;
-            font-size: 14px;
-            text-align: center;
+        .save-btn {
+            padding: 10px;
+            background: gold;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
-    <div id="wheel">
-        <div id="arrow"></div>
-    </div>
-    <button id="spinButton">Крутить колесо</button>
-    <div id="result"></div>
+    <div class="balance">⭐ <span id="stars">0</span></div>
+    <img src="https://upload.wikimedia.org/wikipedia/commons/3/3f/Star_font_awesome.svg" class="star" id="star">
+    <div class="energy">🔋 <span id="energy">100%</span></div>
+    <button class="save-btn" onclick="sendData()">💾 Сохранить</button>
 
     <script>
-        const prizes = [
-            { name: 'Приз 1', amount: 10 },
-            { name: 'Приз 2', amount: 20 },
-            { name: 'Приз 3', amount: 30 },
-            { name: 'Приз 4', amount: 40 }
-        ];
+        let stars = 0;
+        let energy = 100;
+        const tg = window.Telegram.WebApp;
 
-        let spinButton = document.getElementById('spinButton');
-        let resultDiv = document.getElementById('result');
-        let wheel = document.getElementById('wheel');
-        let arrow = document.getElementById('arrow');
-        
-        const anglePerSector = 360 / prizes.length; // угол для каждого сектора
-
-        // Добавляем текст с призами на каждый сектор
-        function createPrizeText() {
-            prizes.forEach((prize, index) => {
-                let sectorText = document.createElement('div');
-                sectorText.classList.add('sector-text');
-                sectorText.innerText = prize.name;
-                // Располагаем текст по кругу
-                const angle = anglePerSector * index;
-                const radians = angle * (Math.PI / 180);
-                const x = 130 + 110 * Math.cos(radians);  // 130 - радиус колеса, 110 - отступ текста от центра
-                const y = 130 + 110 * Math.sin(radians);  // 130 - радиус колеса, 110 - отступ текста от центра
-                sectorText.style.left = `${x}px`;
-                sectorText.style.top = `${y}px`;
-                wheel.appendChild(sectorText);
-            });
+        function loadUserData() {
+            tg.expand();
+            fetch(`https://your-backend-url.com/get_user?user_id=${tg.initDataUnsafe.user.id}`)
+                .then(response => response.json())
+                .then(data => {
+                    stars = data.stars;
+                    energy = data.energy;
+                    document.getElementById("stars").innerText = stars.toFixed(2);
+                    document.getElementById("energy").innerText = energy + "%";
+                });
         }
 
-        createPrizeText();  // Генерируем текст для секторов
+        document.getElementById("star").addEventListener("click", () => {
+            if (energy > 0) {
+                stars += 0.01;
+                energy -= 1;
+                document.getElementById("stars").innerText = stars.toFixed(2);
+                document.getElementById("energy").innerText = energy + "%";
+            }
+        });
 
-    spinButton.onclick = function() {
-        // Вращение колеса
-        let randomDegree = Math.floor(Math.random() * 360); // Случайный угол для вращения
-        let actualRotation = randomDegree + 3600; // Добавляем несколько оборотов для эффекта
-    
-        // Поворачиваем колесо
-        wheel.style.transition = "transform 3s ease-out";
-        wheel.style.transform = `rotate(${actualRotation}deg)`;
-    
-        // После завершения вращения, показываем результат
-        setTimeout(function() {
-            let prizeIndex = Math.floor((randomDegree % 360) / anglePerSector);
-            let prize = prizes[prizeIndex];
-            resultDiv.textContent = `Вы выиграли: ${prize.name} (${prize.amount} звёзд)`;
-    
-            // Получаем telegram_id и отправляем результат вращения на сервер
-            const telegramId = window.Telegram.WebApp.user.id;  // Получаем ID пользователя
-    
-            // Логируем, чтобы проверить, что запрос отправляется
-            console.log(`Отправка запроса на сервер с данными:`, {
-                amount: prize.amount,
-                telegram_id: telegramId
-            });
-    
-            // Отправляем запрос на сервер
-            fetch("http://127.0.0.1:8000/update_balance", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    amount: prize.amount,
-                    telegram_id: telegramId
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Ответ от сервера:', data);
-            })
-            .catch(error => {
-                console.error('Ошибка при отправке запроса:', error);
-            });
-    
-            // Отправляем результат в WebApp API (необязательно)
-            window.Telegram.WebApp.sendData(`spin_result:${prize.amount}`);
-        }, 3000);
-    };
+        function restoreEnergy() {
+            if (energy < 100) {
+                energy += 1;
+                document.getElementById("energy").innerText = energy + "%";
+            }
+        }
+        setInterval(restoreEnergy, 1000);
 
+        function sendData() {
+            const data = JSON.stringify({ stars, energy });
+            tg.sendData(data);
+            alert("Данные отправлены!");
+        }
+
+        window.onload = loadUserData;
     </script>
 </body>
 </html>
