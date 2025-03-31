@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Колесо Удачи</title>
+    <style>
+        /* Добавьте стили для колеса удачи */
+        #wheel {
+            border-radius: 50%;
+            width: 300px;
+            height: 300px;
+            background: conic-gradient(#ff0000 0% 25%, #00ff00 25% 50%, #0000ff 50% 75%, #ff00ff 75% 100%);
+            margin: 50px auto;
+            position: relative;
+        }
+        #spinButton {
+            display: block;
+            margin: 20px auto;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="wheel"></div>
+    <button id="spinButton">Крутить колесо</button>
+
+    <script>
+        let spinButton = document.getElementById('spinButton');
+        spinButton.onclick = function() {
+            // Вращение колеса
+            let wheel = document.getElementById('wheel');
+            let randomDegree = Math.floor(Math.random() * 360);
+            wheel.style.transition = "transform 3s ease-out";
+            wheel.style.transform = `rotate(${randomDegree}deg)`;
+
+            // Отправляем результат вращения в бота через WebApp API
+            setTimeout(function() {
+                let prize = Math.floor(Math.random() * 100);  // случайная сумма
+                window.Telegram.WebApp.sendData(`spin_result:${prize}`);
+            }, 3000);
+        };
+    </script>
+</body>
+</html>
