@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Колесо Удачи</title>
     <style>
+        /* Стиль для колеса */
         #wheel {
             border-radius: 50%;
             width: 300px;
@@ -13,9 +14,11 @@
             margin: 50px auto;
             position: relative;
         }
+
+        /* Стиль для стрелки */
         #arrow {
             position: absolute;
-            top: -20px;
+            top: -20px; /* Позиция стрелки над колесом */
             left: 50%;
             margin-left: -5px;
             width: 0;
@@ -24,6 +27,8 @@
             border-right: 5px solid transparent;
             border-bottom: 10px solid black;
         }
+
+        /* Стиль для кнопки */
         #spinButton {
             display: block;
             margin: 20px auto;
@@ -34,11 +39,25 @@
             border-radius: 5px;
             cursor: pointer;
         }
+
+        /* Стиль для результата */
         #result {
             text-align: center;
             font-size: 18px;
             margin-top: 20px;
             font-weight: bold;
+        }
+
+        /* Стиль для текста на секторах */
+        .sector-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            text-align: center;
         }
     </style>
 </head>
@@ -50,8 +69,6 @@
     <div id="result"></div>
 
     <script>
-        const apiUrl = "http://127.0.0.1:8000";  // Локальный сервер
-
         const prizes = [
             { name: 'Приз 1', amount: 10 },
             { name: 'Приз 2', amount: 20 },
@@ -59,37 +76,64 @@
             { name: 'Приз 4', amount: 40 }
         ];
 
-        const spinButton = document.getElementById('spinButton');
-        const resultDiv = document.getElementById('result');
-        const wheel = document.getElementById('wheel');
-        const arrow = document.getElementById('arrow');
-        const anglePerSector = 360 / prizes.length;
+        let spinButton = document.getElementById('spinButton');
+        let resultDiv = document.getElementById('result');
+        let wheel = document.getElementById('wheel');
+        let arrow = document.getElementById('arrow');
+        
+        const anglePerSector = 360 / prizes.length; // угол для каждого сектора
+
+        // Добавляем текст с призами на каждый сектор
+        function createPrizeText() {
+            prizes.forEach((prize, index) => {
+                let sectorText = document.createElement('div');
+                sectorText.classList.add('sector-text');
+                sectorText.innerText = prize.name;
+                // Располагаем текст по кругу
+                const angle = anglePerSector * index;
+                const radians = angle * (Math.PI / 180);
+                const x = 130 + 110 * Math.cos(radians);  // 130 - радиус колеса, 110 - отступ текста от центра
+                const y = 130 + 110 * Math.sin(radians);  // 130 - радиус колеса, 110 - отступ текста от центра
+                sectorText.style.left = `${x}px`;
+                sectorText.style.top = `${y}px`;
+                wheel.appendChild(sectorText);
+            });
+        }
+
+        createPrizeText();  // Генерируем текст для секторов
 
         spinButton.onclick = function() {
-            let randomDegree = Math.floor(Math.random() * 360); 
-            let actualRotation = randomDegree + 3600; 
+            // Вращение колеса
+            let randomDegree = Math.floor(Math.random() * 360); // Случайный угол для вращения
+            let actualRotation = randomDegree + 3600; // Добавляем несколько оборотов для эффекта
 
+            // Поворачиваем колесо
             wheel.style.transition = "transform 3s ease-out";
             wheel.style.transform = `rotate(${actualRotation}deg)`;
 
+            // После завершения вращения, показываем результат
             setTimeout(function() {
                 let prizeIndex = Math.floor((randomDegree % 360) / anglePerSector);
                 let prize = prizes[prizeIndex];
                 resultDiv.textContent = `Вы выиграли: ${prize.name} (${prize.amount} звёзд)`;
 
-                // Отправка результата на сервер
-                fetch(`${apiUrl}/update_balance`, {
+                // Получаем telegram_id и отправляем результат вращения на сервер
+                const telegramId = window.Telegram.WebApp.user.id;  // Получаем ID пользователя
+
+                // Отправляем результат вращения на сервер
+                fetch("http://127.0.0.1:8000/update_balance", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
                         amount: prize.amount,
-                        telegram_id: 12345  // Здесь укажи свой Telegram ID
+                        telegram_id: telegramId
                     })
-                }).then(response => response.json())
-                  .then(data => console.log(data))
-                  .catch(error => console.error('Ошибка при отправке данных:', error));
+                });
+
+                // Отправляем результат в WebApp API (необязательно)
+                window.Telegram.WebApp.sendData(`spin_result:${prize.amount}`);
             }, 3000);
         };
     </script>
